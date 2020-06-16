@@ -64,6 +64,7 @@ public abstract class BeanFactoryUtils {
 	}
 
 	/**
+	 * 对Bean 名称的校验， 如果存在 & 符号则会对对象进行处理
 	 * Return the actual bean name, stripping out the factory dereference
 	 * prefix (if any, also stripping repeated factory prefixes if found).
 	 * @param name the name of the bean
@@ -73,6 +74,8 @@ public abstract class BeanFactoryUtils {
 	public static String transformedBeanName(String name) {
 		Assert.notNull(name, "'name' must not be null");
 		String beanName = name;
+
+		// 判断传入Bean对象名称是否为 & 符号开始，如果以符号 & 开始则切割字符串将符号 & 去除返回修改后的名称
 		while (beanName.startsWith(BeanFactory.FACTORY_BEAN_PREFIX)) {
 			beanName = beanName.substring(BeanFactory.FACTORY_BEAN_PREFIX.length());
 		}
