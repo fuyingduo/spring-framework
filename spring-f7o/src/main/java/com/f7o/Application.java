@@ -13,6 +13,7 @@ public class Application {
 	public static void main(String[] args) {
 		AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext(AppConfig.class);
 		IndexService indexService = (IndexService) context.getBean("indexService");
+		context.scan("com.f7o");
 		indexService.query();
 	}
 }
