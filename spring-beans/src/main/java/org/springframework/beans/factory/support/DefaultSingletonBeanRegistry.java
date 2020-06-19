@@ -140,6 +140,13 @@ public class DefaultSingletonBeanRegistry extends SimpleAliasRegistry implements
 	private final Map<String, Set<String>> dependenciesForBeanMap = new ConcurrentHashMap<>(64);
 
 
+	/**
+	 * 通过BeanName尝试从单例池中获取 Bean，如果存在则抛出异常，因为这个方法是注册Bean对象，如果对象存在则不应该进入这个方法
+	 * 如果单例池中不存在这个Bean 则会取创建一个单例bean
+	 * @param beanName the name of the bean
+	 * @param singletonObject the existing singleton object
+	 * @throws IllegalStateException
+	 */
 	@Override
 	public void registerSingleton(String beanName, Object singletonObject) throws IllegalStateException {
 		Assert.notNull(beanName, "Bean name must not be null");
@@ -150,6 +157,7 @@ public class DefaultSingletonBeanRegistry extends SimpleAliasRegistry implements
 				throw new IllegalStateException("Could not register object [" + singletonObject +
 						"] under bean name '" + beanName + "': there is already object [" + oldObject + "] bound");
 			}
+			// 创建一个 BeanName 的单例对象
 			addSingleton(beanName, singletonObject);
 		}
 	}

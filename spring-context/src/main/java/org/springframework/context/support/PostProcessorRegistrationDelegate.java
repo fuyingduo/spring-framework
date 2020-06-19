@@ -55,15 +55,28 @@ final class PostProcessorRegistrationDelegate {
 		// Invoke BeanDefinitionRegistryPostProcessors first, if any.
 		Set<String> processedBeans = new HashSet<>();
 
+		// 判断 当前的 BeanFactory 是否实现了一个名为 BeanDefinitionRegistry注册器，
+		// 默认工厂 DefaultListableBeanFactory 实现了 BeanDefinitionRegistry
 		if (beanFactory instanceof BeanDefinitionRegistry) {
 			BeanDefinitionRegistry registry = (BeanDefinitionRegistry) beanFactory;
+
+			// 用于存放实现了 BeanFactoryPostProcessor 接口的后置处理器
 			List<BeanFactoryPostProcessor> regularPostProcessors = new ArrayList<>();
+
+			// 用于存放实现了 BeanDefinitionRegistryPostProcessor 接口的后置处理器
 			List<BeanDefinitionRegistryPostProcessor> registryProcessors = new ArrayList<>();
 
+			// BeanDefinitionRegistryPostProcessor 后置处理器继承了 BeanFactoryPostProcessor
+			// 表示是对 BeanFactoryPostProcessor 的一个扩展
+			// 当前 beanFactoryPostProcessors 中存入的是用户自定义的 后置处理器
 			for (BeanFactoryPostProcessor postProcessor : beanFactoryPostProcessors) {
+
+				// 判断用户自定义的后置处理器是否实现了 BeanDefinitionRegistryPostProcessor 接口
 				if (postProcessor instanceof BeanDefinitionRegistryPostProcessor) {
 					BeanDefinitionRegistryPostProcessor registryProcessor =
 							(BeanDefinitionRegistryPostProcessor) postProcessor;
+
+					// 调用用户自定义后置处理器中的实现方法 postProcessBeanDefinitionRegistry
 					registryProcessor.postProcessBeanDefinitionRegistry(registry);
 					registryProcessors.add(registryProcessor);
 				}
@@ -72,24 +85,32 @@ final class PostProcessorRegistrationDelegate {
 				}
 			}
 
+			// 用于存放spring 后置处理器 并实现了BeanDefinitionRegistryPostProcessor 的Bean
 			// Do not initialize FactoryBeans here: We need to leave all regular beans
 			// uninitialized to let the bean factory post-processors apply to them!
 			// Separate between BeanDefinitionRegistryPostProcessors that implement
 			// PriorityOrdered, Ordered, and the rest.
 			List<BeanDefinitionRegistryPostProcessor> currentRegistryProcessors = new ArrayList<>();
 
+			// 获取Spring实现了BeanDefinitionRegistryPostProcessor 接口的后置处理器名称
 			// First, invoke the BeanDefinitionRegistryPostProcessors that implement PriorityOrdered.
 			String[] postProcessorNames =
 					beanFactory.getBeanNamesForType(BeanDefinitionRegistryPostProcessor.class, true, false);
+
+			// 通过 postProcessorNames 中的名称得到 Bean 并存入 currentRegistryProcessors、processedBeans 中
 			for (String ppName : postProcessorNames) {
 				if (beanFactory.isTypeMatch(ppName, PriorityOrdered.class)) {
 					currentRegistryProcessors.add(beanFactory.getBean(ppName, BeanDefinitionRegistryPostProcessor.class));
 					processedBeans.add(ppName);
 				}
 			}
+			// 排序
 			sortPostProcessors(currentRegistryProcessors, beanFactory);
+			// 将currentRegistryProcessors 中的Bean放入 registryProcessors 中
 			registryProcessors.addAll(currentRegistryProcessors);
 			invokeBeanDefinitionRegistryPostProcessors(currentRegistryProcessors, registry);
+
+			// 清除 currentRegistryProcessors
 			currentRegistryProcessors.clear();
 
 			// Next, invoke the BeanDefinitionRegistryPostProcessors that implement Ordered.

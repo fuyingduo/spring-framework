@@ -1,6 +1,7 @@
 package com.f7o;
 
 import com.f7o.config.AppConfig;
+import com.f7o.processor.TestDefinitionRegistryPostProessor;
 import com.f7o.services.IndexService;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 
@@ -11,10 +12,11 @@ import org.springframework.context.annotation.AnnotationConfigApplicationContext
 public class Application {
 
 	public static void main(String[] args) {
-		AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext(AppConfig.class);
-		context.register();
+		AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext();
+		context.addBeanFactoryPostProcessor(new TestDefinitionRegistryPostProessor());
+		context.register(AppConfig.class);
+		context.refresh();
 		IndexService indexService = (IndexService) context.getBean("indexService");
-		context.scan("com.f7o");
 		indexService.query();
 	}
 }

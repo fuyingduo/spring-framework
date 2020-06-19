@@ -60,6 +60,7 @@ abstract class ConfigurationClassUtils {
 
 	private static final Log logger = LogFactory.getLog(ConfigurationClassUtils.class);
 
+	// Component， ComponentScan， Import， ImportResource
 	private static final Set<String> candidateIndicators = new HashSet<>(8);
 
 	static {
@@ -79,12 +80,15 @@ abstract class ConfigurationClassUtils {
 	 * @return whether the candidate qualifies as (any kind of) configuration class
 	 */
 	public static boolean checkConfigurationClassCandidate(BeanDefinition beanDef, MetadataReaderFactory metadataReaderFactory) {
+
+		// 获取 BeanDefinition 锁描述对象的全线类名
 		String className = beanDef.getBeanClassName();
 		if (className == null || beanDef.getFactoryMethodName() != null) {
 			return false;
 		}
 
 		AnnotationMetadata metadata;
+		// 判断当前的BeanDefinition 是不是注解BeanDefinition
 		if (beanDef instanceof AnnotatedBeanDefinition &&
 				className.equals(((AnnotatedBeanDefinition) beanDef).getMetadata().getClassName())) {
 			// Can reuse the pre-parsed metadata from the given BeanDefinition...
@@ -109,9 +113,11 @@ abstract class ConfigurationClassUtils {
 			}
 		}
 
+		// 判断当前元数据是否有 @Configuration注解，如果存在则设置限定属性名， 如果包含设置属性表示当前对象为配置类
 		if (isFullConfigurationCandidate(metadata)) {
 			beanDef.setAttribute(CONFIGURATION_CLASS_ATTRIBUTE, CONFIGURATION_CLASS_FULL);
 		}
+		// 判断当前元数据是否包含 Component， ComponentScan， Import， ImportResource Bean 注解， 如果包含设置属性表示当前对象为配置类
 		else if (isLiteConfigurationCandidate(metadata)) {
 			beanDef.setAttribute(CONFIGURATION_CLASS_ATTRIBUTE, CONFIGURATION_CLASS_LITE);
 		}
@@ -119,6 +125,7 @@ abstract class ConfigurationClassUtils {
 			return false;
 		}
 
+		// 获取当前元数据的排序， 并设置order值
 		// It's a full or lite configuration candidate... Let's determine the order value, if any.
 		Integer order = getOrder(metadata);
 		if (order != null) {
@@ -151,6 +158,8 @@ abstract class ConfigurationClassUtils {
 	}
 
 	/**
+	 *
+	 * 该方法主要判断当前的元数据（对象）是否包含一些注解，是不是配置类
 	 * Check the given metadata for a lite configuration class candidate
 	 * (e.g. a class annotated with {@code @Component} or just having
 	 * {@code @Import} declarations or {@code @Bean methods}).
@@ -160,10 +169,12 @@ abstract class ConfigurationClassUtils {
 	 */
 	public static boolean isLiteConfigurationCandidate(AnnotationMetadata metadata) {
 		// Do not consider an interface or an annotation...
+		// 判断是否是皆苦
 		if (metadata.isInterface()) {
 			return false;
 		}
 
+		// 判断元数据是否包含 Component， ComponentScan， Import， ImportResource 注解
 		// Any of the typical annotations found?
 		for (String indicator : candidateIndicators) {
 			if (metadata.isAnnotated(indicator)) {
@@ -173,6 +184,7 @@ abstract class ConfigurationClassUtils {
 
 		// Finally, let's look for @Bean methods...
 		try {
+			// 判断元数据中的方法是否包含 @Bean注解
 			return metadata.hasAnnotatedMethods(Bean.class.getName());
 		}
 		catch (Throwable ex) {

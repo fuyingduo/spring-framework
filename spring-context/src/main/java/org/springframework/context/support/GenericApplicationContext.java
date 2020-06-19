@@ -98,6 +98,10 @@ public class GenericApplicationContext extends AbstractApplicationContext implem
 
 	private boolean customClassLoader = false;
 
+	/**
+	 * 表示 ApplicationContext 上线文是否正在执行 refresh 操作
+	 * 默认值为 false，会在执行 refresh() 方法时更新值为 true 表示正在执行 refresh
+	 */
 	private final AtomicBoolean refreshed = new AtomicBoolean();
 
 
@@ -107,6 +111,8 @@ public class GenericApplicationContext extends AbstractApplicationContext implem
 	 * @see #refresh
 	 */
 	public GenericApplicationContext() {
+
+		// 创建一个默认的BeanFactroy工厂 在 GenericApplicationContext 中
 		this.beanFactory = new DefaultListableBeanFactory();
 	}
 
@@ -254,6 +260,10 @@ public class GenericApplicationContext extends AbstractApplicationContext implem
 	//---------------------------------------------------------------------
 
 	/**
+	 * 通过CAS锁尝试更新 refreshed 值为 true， 表示上下文中正在执行 refresh 操作
+	 * 如果更新失败，则抛出异常
+	 * 为 beanFactory 设置序列化ID
+	 *
 	 * Do nothing: We hold a single internal BeanFactory and rely on callers
 	 * to register beans through our public methods (or the BeanFactory's).
 	 * @see #registerBeanDefinition

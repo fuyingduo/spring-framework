@@ -163,6 +163,7 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 	@Nullable
 	private SecurityContextProvider securityContextProvider;
 
+	// 用于存放 RootBeanDefinition，在合并完成后 BeanDefinition会赋值给RootBeanDefinition，也会存入这个Map中，key为 beanName
 	/** Map from bean name to merged RootBeanDefinition */
 	private final Map<String, RootBeanDefinition> mergedBeanDefinitions = new ConcurrentHashMap<>(256);
 
@@ -1231,11 +1232,14 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 	 * @throws BeanDefinitionStoreException in case of an invalid bean definition
 	 */
 	protected RootBeanDefinition getMergedLocalBeanDefinition(String beanName) throws BeansException {
+
+		// 从合并Map mergedBeanDefinitions 中获取 RootBeanDefinition
 		// Quick check on the concurrent map first, with minimal locking.
 		RootBeanDefinition mbd = this.mergedBeanDefinitions.get(beanName);
 		if (mbd != null) {
 			return mbd;
 		}
+		// 通过BeanName 获取  beanDefinitionMap 中的 DefinitionBean 描述Bean， 并当成参数传入 getMergedBeanDefinition 方法
 		return getMergedBeanDefinition(beanName, getBeanDefinition(beanName));
 	}
 
@@ -1270,6 +1274,7 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 		synchronized (this.mergedBeanDefinitions) {
 			RootBeanDefinition mbd = null;
 
+			// 判断 containingBd 是否为空， 如果为Null 则尝试从 mergedBeanDefinitions Map中获取RootBeanDefinition
 			// Check with full lock now in order to enforce the same merged instance.
 			if (containingBd == null) {
 				mbd = this.mergedBeanDefinitions.get(beanName);
@@ -1277,6 +1282,8 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 
 			if (mbd == null) {
 				if (bd.getParentName() == null) {
+
+					// BeanDefinition 和 RootBeanDefinition 存在继承关系 所以会将bd 克隆给mbd
 					// Use copy of given root bean definition.
 					if (bd instanceof RootBeanDefinition) {
 						mbd = ((RootBeanDefinition) bd).cloneBeanDefinition();
@@ -1314,6 +1321,7 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 					mbd.overrideFrom(bd);
 				}
 
+				// 如果 描述对象中的 scope 作用域为 NULL，则默认设置为单例模式
 				// Set default singleton scope, if not configured before.
 				if (!StringUtils.hasLength(mbd.getScope())) {
 					mbd.setScope(SCOPE_SINGLETON);
@@ -1327,6 +1335,7 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 					mbd.setScope(containingBd.getScope());
 				}
 
+				// 将合并后的 RootBeanDefinition 存入mergedBeanDefinitions map中
 				// Cache the merged bean definition for the time being
 				// (it might still get re-merged later on in order to pick up metadata changes)
 				if (containingBd == null && isCacheBeanMetadata()) {
