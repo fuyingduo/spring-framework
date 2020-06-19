@@ -17,6 +17,8 @@
 package org.springframework.core.env;
 
 /**
+ *
+ * 这个类的主要功能是读取 系统环境变量中设定的参数、以及Spring配置文件中 properties、中设置的参数
  * {@link Environment} implementation suitable for use in 'standard' (i.e. non-web)
  * applications.
  *

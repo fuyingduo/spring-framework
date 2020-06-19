@@ -22,6 +22,8 @@ import org.springframework.core.AttributeAccessor;
 import org.springframework.lang.Nullable;
 
 /**
+ * Bean的定义，用来描述spring中Bean的接口
+ * 同Java类是通过Class类来描述的
  * A BeanDefinition describes a bean instance, which has property values,
  * constructor argument values, and further information supplied by
  * concrete implementations.
@@ -83,11 +85,13 @@ public interface BeanDefinition extends AttributeAccessor, BeanMetadataElement {
 	// Modifiable attributes
 
 	/**
+	 * 存入Bean的父类的名字
 	 * Set the name of the parent definition of this bean definition, if any.
 	 */
 	void setParentName(@Nullable String parentName);
 
 	/**
+	 * 等到Bean的父类的名字
 	 * Return the name of the parent definition of this bean definition, if any.
 	 */
 	@Nullable

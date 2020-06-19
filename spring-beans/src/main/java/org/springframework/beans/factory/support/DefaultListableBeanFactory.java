@@ -780,6 +780,13 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 	// Implementation of BeanDefinitionRegistry interface
 	//---------------------------------------------------------------------
 
+	/**
+	 * 注册beanDefinition 最终将 BeanDefinition 、beanName 以key value形式存入 beanDefinitionMap
+	 * 同时将 beanName 存入beanDefinitionNames 中
+	 * @param beanName the name of the bean instance to register
+	 * @param beanDefinition definition of the bean instance to register
+	 * @throws BeanDefinitionStoreException
+	 */
 	@Override
 	public void registerBeanDefinition(String beanName, BeanDefinition beanDefinition)
 			throws BeanDefinitionStoreException {
@@ -787,6 +794,8 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 		Assert.hasText(beanName, "Bean name must not be empty");
 		Assert.notNull(beanDefinition, "BeanDefinition must not be null");
 
+		// 判断 beanDefinition 是否继承  AbstractBeanDefinition
+		// 如果继承则需要验证这个 beanDefinition
 		if (beanDefinition instanceof AbstractBeanDefinition) {
 			try {
 				((AbstractBeanDefinition) beanDefinition).validate();
@@ -797,6 +806,7 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 			}
 		}
 
+		// 尝试从 beanDefinitionMap 中获取 名称为 beanName 的BeanDefinition， 在第一次获取一定为NULL，因为还没有存入
 		BeanDefinition existingDefinition = this.beanDefinitionMap.get(beanName);
 		if (existingDefinition != null) {
 			if (!isAllowBeanDefinitionOverriding()) {
@@ -828,6 +838,7 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 			}
 			this.beanDefinitionMap.put(beanName, beanDefinition);
 		}
+		// 主要功能是将 beanName 和 beanDefinition 存入 beanDefinitionMap Map中， 并将beanName 存入 beanDefinitionNames List中
 		else {
 			if (hasBeanCreationStarted()) {
 				// Cannot modify startup-time collection elements anymore (for stable iteration)
@@ -853,9 +864,11 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 			this.frozenBeanDefinitionNames = null;
 		}
 
+		// 如果 existingDefinition 描述对象存在， 则从单例池中将这个bean移除，重新进行定义
 		if (existingDefinition != null || containsSingleton(beanName)) {
 			resetBeanDefinition(beanName);
 		}
+		// 是否清除所有bean缓存 默认是false
 		else if (isConfigurationFrozen()) {
 			clearByTypeCache();
 		}

@@ -213,18 +213,30 @@ public class AnnotatedBeanDefinitionReader {
 	<T> void doRegisterBean(Class<T> annotatedClass, @Nullable Supplier<T> instanceSupplier, @Nullable String name,
 			@Nullable Class<? extends Annotation>[] qualifiers, BeanDefinitionCustomizer... definitionCustomizers) {
 
-		// 注解Bean定义
+		// 定义一个用来描述注解Bean的对象
 		AnnotatedGenericBeanDefinition abd = new AnnotatedGenericBeanDefinition(annotatedClass);
+
+		// 判断是否需要跳过解析
 		if (this.conditionEvaluator.shouldSkip(abd.getMetadata())) {
 			return;
 		}
 
 		abd.setInstanceSupplier(instanceSupplier);
+
+		// 将对象Scope注解中value 存入ScopeMetadata.scopName中，同时将 proxyMode 存入ScopMetadata.scopedProxyMode中
 		ScopeMetadata scopeMetadata = this.scopeMetadataResolver.resolveScopeMetadata(abd);
+
+		// 将ScopeMetadata元数据中的ScopeName存入AnnotatedGenericBeanDefinition，指的就是对象的Scope value值
 		abd.setScope(scopeMetadata.getScopeName());
+
+		// 为Bean生成一个名字，进入方法有详细注释
 		String beanName = (name != null ? name : this.beanNameGenerator.generateBeanName(abd, this.registry));
 
+		// 用来处理对象中定义的注解如 @Lazy， 会判断对象中是否存在该注解 如果存在则会描述对象  AnnotatedGenericBeanDefinition 赋值为true
 		AnnotationConfigUtils.processCommonDefinitionAnnotations(abd);
+
+		// 用来判断对象中是否有限定符修饰 如 @Primary等，如果有则对AnnotatedGenericBeanDefinition 赋值 同上一步方法类似
+		// 但是在扫描配置类中不会进入该方法，因为在配置类中不会添加这些限定符
 		if (qualifiers != null) {
 			for (Class<? extends Annotation> qualifier : qualifiers) {
 				if (Primary.class == qualifier) {
@@ -238,12 +250,17 @@ public class AnnotatedBeanDefinitionReader {
 				}
 			}
 		}
+
+		// 判断是否有自定义描述信息 如果有则会处理 将自定义描述存入 genericArgumentValues List中
 		for (BeanDefinitionCustomizer customizer : definitionCustomizers) {
 			customizer.customize(abd);
 		}
 
+		// BeanDefinitionHolder 对象用来存入BeanDefinition、 beanName、aliases等信息信息
 		BeanDefinitionHolder definitionHolder = new BeanDefinitionHolder(abd, beanName);
+		// 判断当前对象是否有代理模型 如果有需要处理 同时判断是否有别名
 		definitionHolder = AnnotationConfigUtils.applyScopedProxyMode(scopeMetadata, definitionHolder, this.registry);
+		// 这个方法主要功能是将 BeanDefinitionHolder中的beanName、BeanDefinition存储beanDefinitionMap 的一个Map中
 		BeanDefinitionReaderUtils.registerBeanDefinition(definitionHolder, this.registry);
 	}
 

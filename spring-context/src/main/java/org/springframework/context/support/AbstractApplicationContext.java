@@ -180,9 +180,11 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 	/** System time in milliseconds when this context started */
 	private long startupDate;
 
+	// 表示上下文是否是激活状态，在实例化bean过程中需要设置为true
 	/** Flag that indicates whether this context is currently active */
 	private final AtomicBoolean active = new AtomicBoolean();
 
+	// 表示上下文是否开启的一个状态标志，在实例化Bean过程中需要将此标志设置为false
 	/** Flag that indicates whether this context has been closed already */
 	private final AtomicBoolean closed = new AtomicBoolean();
 
@@ -483,6 +485,10 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 		}
 	}
 
+	/**
+	 * 在添加后置处理器是 会将所有的后置处理器存入一个List集合当中
+	 * @param postProcessor the factory processor to register
+	 */
 	@Override
 	public void addBeanFactoryPostProcessor(BeanFactoryPostProcessor postProcessor) {
 		Assert.notNull(postProcessor, "BeanFactoryPostProcessor must not be null");
@@ -490,6 +496,7 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 	}
 
 	/**
+	 * 将所有添加List集合中的后置处理器返回
 	 * Return the list of BeanFactoryPostProcessors that will get applied
 	 * to the internal BeanFactory.
 	 */
@@ -516,19 +523,25 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 	@Override
 	public void refresh() throws BeansException, IllegalStateException {
 		synchronized (this.startupShutdownMonitor) {
+
+			// 主要做实例化过程前的准备工作， 如设置实例化启动时间、开启上下文等等
 			// Prepare this context for refreshing.
 			prepareRefresh();
 
+			// 获取工厂类信息所指的就是 DefaultListableBeanFactory工厂，并用它的子类 ConfigurableListableBeanFactory 接收
 			// Tell the subclass to refresh the internal bean factory.
 			ConfigurableListableBeanFactory beanFactory = obtainFreshBeanFactory();
 
+			// 准备工厂，就是对工厂的一些初始化设置 比如 BeanClassLoader 类加载器，后置处理器等
 			// Prepare the bean factory for use in this context.
 			prepareBeanFactory(beanFactory);
 
 			try {
+				// 为 beanFactory 添加一些可以对它处理的后置处理器
 				// Allows post-processing of the bean factory in context subclasses.
 				postProcessBeanFactory(beanFactory);
 
+				// 执行Bean工厂中的后置处理器对Bean工厂处理
 				// Invoke factory processors registered as beans in the context.
 				invokeBeanFactoryPostProcessors(beanFactory);
 
@@ -583,22 +596,29 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 	 * active flag as well as performing any initialization of property sources.
 	 */
 	protected void prepareRefresh() {
+
+		// 设置实例化开始时间
 		// Switch to active.
 		this.startupDate = System.currentTimeMillis();
+		// 开启上下文标志
 		this.closed.set(false);
+		// 激活上下文标志
 		this.active.set(true);
 
 		if (logger.isInfoEnabled()) {
 			logger.info("Refreshing " + this);
 		}
 
+		// 这个是spring 后期会使用的方法 当前是个空方法
 		// Initialize any placeholder property sources in the context environment.
 		initPropertySources();
 
+		// 读取 系统环境和properties 配置文件中参数信息并验证，主要验证配置信息key 所对应的value值是否为空
 		// Validate that all properties marked as required are resolvable:
 		// see ConfigurablePropertyResolver#setRequiredProperties
 		getEnvironment().validateRequiredProperties();
 
+		// 初始化一个监听器
 		// Store pre-refresh ApplicationListeners...
 		if (this.earlyApplicationListeners == null) {
 			this.earlyApplicationListeners = new LinkedHashSet<>(this.applicationListeners);
@@ -609,6 +629,7 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 			this.applicationListeners.addAll(this.earlyApplicationListeners);
 		}
 
+		// 初始化事件
 		// Allow for the collection of early ApplicationEvents,
 		// to be published once the multicaster is available...
 		this.earlyApplicationEvents = new LinkedHashSet<>();
@@ -644,11 +665,14 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 	 * @param beanFactory the BeanFactory to configure
 	 */
 	protected void prepareBeanFactory(ConfigurableListableBeanFactory beanFactory) {
+		// 主要是配置工厂的类加载器、表达式解析器、属性编辑器
 		// Tell the internal bean factory to use the context's class loader etc.
 		beanFactory.setBeanClassLoader(getClassLoader());
 		beanFactory.setBeanExpressionResolver(new StandardBeanExpressionResolver(beanFactory.getBeanClassLoader()));
 		beanFactory.addPropertyEditorRegistrar(new ResourceEditorRegistrar(this, getEnvironment()));
 
+		// 主要配置工厂的上下文回调，其中BeanPostProcessor 后置处理器是一个spring的扩展点，主要的功能是在Bean初始化过程中开发人员可以
+		// 手动干预初始化的过程。
 		// Configure the bean factory with context callbacks.
 		beanFactory.addBeanPostProcessor(new ApplicationContextAwareProcessor(this));
 		beanFactory.ignoreDependencyInterface(EnvironmentAware.class);
