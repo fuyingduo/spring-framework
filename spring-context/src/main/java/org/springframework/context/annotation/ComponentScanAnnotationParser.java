@@ -73,12 +73,23 @@ class ComponentScanAnnotationParser {
 	}
 
 
+	/**
+	 * 用来解析添加了 @componentScan 注解的配置信息，
+	 * 1，将componentScan 设置属性，通过用户在注解中的属性设置读取加入到 AnnotationAttributes 中，如果没有设置则设置默认值
+	 * 2，扫描配置类中扫描路径下所有的类，并生成BeanDefinition
+	 * @param componentScan
+	 * @param declaringClass 配置类名称
+	 * @return
+	 */
 	public Set<BeanDefinitionHolder> parse(AnnotationAttributes componentScan, final String declaringClass) {
+
+		// 这个就是在AnnotationConfigApplicationContext 构造器中初始化的扫描器，因此可以断定在配置类扫描过程中是没有调用构造器的扫描类
 		ClassPathBeanDefinitionScanner scanner = new ClassPathBeanDefinitionScanner(this.registry,
 				componentScan.getBoolean("useDefaultFilters"), this.environment, this.resourceLoader);
 
 		Class<? extends BeanNameGenerator> generatorClass = componentScan.getClass("nameGenerator");
 		boolean useInheritedGenerator = (BeanNameGenerator.class == generatorClass);
+		// 存入BeanName生成器，注解配置生成的是 AnnotationBeanNameGenerator
 		scanner.setBeanNameGenerator(useInheritedGenerator ? this.beanNameGenerator :
 				BeanUtils.instantiateClass(generatorClass));
 
@@ -88,41 +99,52 @@ class ComponentScanAnnotationParser {
 		}
 		else {
 			Class<? extends ScopeMetadataResolver> resolverClass = componentScan.getClass("scopeResolver");
+			// 设置作用域元数据解析器
 			scanner.setScopeMetadataResolver(BeanUtils.instantiateClass(resolverClass));
 		}
 
 		scanner.setResourcePattern(componentScan.getString("resourcePattern"));
 
+		// 获取所有额外包含的过滤器
 		for (AnnotationAttributes filter : componentScan.getAnnotationArray("includeFilters")) {
 			for (TypeFilter typeFilter : typeFiltersFor(filter)) {
 				scanner.addIncludeFilter(typeFilter);
 			}
 		}
+		// 获取排除过滤器
 		for (AnnotationAttributes filter : componentScan.getAnnotationArray("excludeFilters")) {
 			for (TypeFilter typeFilter : typeFiltersFor(filter)) {
 				scanner.addExcludeFilter(typeFilter);
 			}
 		}
 
+		// 判断是否设置懒加载
 		boolean lazyInit = componentScan.getBoolean("lazyInit");
 		if (lazyInit) {
 			scanner.getBeanDefinitionDefaults().setLazyInit(true);
 		}
 
 		Set<String> basePackages = new LinkedHashSet<>();
+		// 获取扫描包路径地址， 在@ComponentScan 中 value 的别名就是 basePackages 因此设置value也相当于设置 basePackages
 		String[] basePackagesArray = componentScan.getStringArray("basePackages");
 		for (String pkg : basePackagesArray) {
+			// 处理扫描路径中的占位符 ，； tab 换行等，默认将这些占位符号是分割作用，意识就是在@ComponentScan(basePackages = "com.a, com.b")
+			// 会切割成两个扫描路径，并存入basePackages 集合中
 			String[] tokenized = StringUtils.tokenizeToStringArray(this.environment.resolvePlaceholders(pkg),
 					ConfigurableApplicationContext.CONFIG_LOCATION_DELIMITERS);
 			Collections.addAll(basePackages, tokenized);
 		}
+		// 将basePackageClasses 所指定的对象包路径也添加到basePackages 集合中
 		for (Class<?> clazz : componentScan.getClassArray("basePackageClasses")) {
 			basePackages.add(ClassUtils.getPackageName(clazz));
 		}
+
+		// 判断basePackages 包路径集合是否为空，如果为空则将当前配置类的包路径存入集合中
 		if (basePackages.isEmpty()) {
 			basePackages.add(ClassUtils.getPackageName(declaringClass));
 		}
 
+		// 添加排除过滤器
 		scanner.addExcludeFilter(new AbstractTypeHierarchyTraversingFilter(false, false) {
 			@Override
 			protected boolean matchClassName(String className) {

@@ -40,8 +40,10 @@ import org.springframework.util.MultiValueMap;
  */
 public class StandardAnnotationMetadata extends StandardClassMetadata implements AnnotationMetadata {
 
+	// 注解数组
 	private final Annotation[] annotations;
 
+	// 是否是嵌套的注解
 	private final boolean nestedAnnotationsAsMap;
 
 

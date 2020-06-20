@@ -78,8 +78,10 @@ public class AnnotationConfigApplicationContext extends GenericApplicationContex
 		this.reader = new AnnotatedBeanDefinitionReader(this);
 
 		/**
-		 * 声明一个扫描器，主要作用是扫描注解scan下所有对象，
-		 * 并通过 AnnotatedBeanDefinitionReader 生成出用于描述这些对象的 BeanDefinition
+		 * 用于扫描用于自定义Bean 通过使用 AnnotationConfigApplicationContext.scan(); 注册的Bean
+		 * @ComponentScan 注解下扫描的Bean不是通过当前这个对象扫描的，在内部Spring new 了一个ClassPathBeanDefinitionScanner
+		 * 来扫描 @ComponentScan 下所有的Bean
+		 * ComponentScanAnnotationParser.parse() 方法中可以验证没有调用当前 scanner扫描器处理
 		 */
 		this.scanner = new ClassPathBeanDefinitionScanner(this);
 	}

@@ -124,6 +124,7 @@ final class ConfigurationClass {
 	}
 
 	/**
+	 * 想传入的BeanDefinition所描述的配置类对象 metadata、BeanName重新封装一个对象
 	 * Create a new {@link ConfigurationClass} with the given name.
 	 * @param metadata the metadata for the underlying class to represent
 	 * @param beanName name of the {@code @Configuration} class bean

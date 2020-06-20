@@ -237,7 +237,14 @@ public class AnnotationConfigUtils {
 		processCommonDefinitionAnnotations(abd, abd.getMetadata());
 	}
 
+	/**
+	 * 方法主要的作用就是查看元数据（被扫描的java类）中是否设置了一些注解
+	 * @param abd
+	 * @param metadata
+	 */
 	static void processCommonDefinitionAnnotations(AnnotatedBeanDefinition abd, AnnotatedTypeMetadata metadata) {
+
+		// 元数据中是否设置类懒加载
 		AnnotationAttributes lazy = attributesFor(metadata, Lazy.class);
 		if (lazy != null) {
 			abd.setLazyInit(lazy.getBoolean("value"));
@@ -249,6 +256,7 @@ public class AnnotationConfigUtils {
 			}
 		}
 
+		// 是否设置了Primary 该注解的作用是当一个类多个继承下默认使用被注解的类
 		if (metadata.isAnnotated(Primary.class.getName())) {
 			abd.setPrimary(true);
 		}
@@ -258,11 +266,14 @@ public class AnnotationConfigUtils {
 		}
 
 		if (abd instanceof AbstractBeanDefinition) {
+			// 是否设置了角色
 			AbstractBeanDefinition absBd = (AbstractBeanDefinition) abd;
 			AnnotationAttributes role = attributesFor(metadata, Role.class);
 			if (role != null) {
 				absBd.setRole(role.getNumber("value").intValue());
 			}
+
+			// 是否设置了描述
 			AnnotationAttributes description = attributesFor(metadata, Description.class);
 			if (description != null) {
 				absBd.setDescription(description.getString("value"));

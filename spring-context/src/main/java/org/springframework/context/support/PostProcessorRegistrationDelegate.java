@@ -93,6 +93,7 @@ final class PostProcessorRegistrationDelegate {
 			List<BeanDefinitionRegistryPostProcessor> currentRegistryProcessors = new ArrayList<>();
 
 			// 获取Spring实现了BeanDefinitionRegistryPostProcessor 接口的后置处理器名称
+			// 在初始化时只有 ConfigurationAnnotationProcessor
 			// First, invoke the BeanDefinitionRegistryPostProcessors that implement PriorityOrdered.
 			String[] postProcessorNames =
 					beanFactory.getBeanNamesForType(BeanDefinitionRegistryPostProcessor.class, true, false);
@@ -106,7 +107,7 @@ final class PostProcessorRegistrationDelegate {
 			}
 			// 排序
 			sortPostProcessors(currentRegistryProcessors, beanFactory);
-			// 将currentRegistryProcessors 中的Bean放入 registryProcessors 中
+			// 将currentRegistryProcessors 和用户自定义的 BeanDefinitionRegistryPostProcessor 合并
 			registryProcessors.addAll(currentRegistryProcessors);
 			invokeBeanDefinitionRegistryPostProcessors(currentRegistryProcessors, registry);
 

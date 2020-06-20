@@ -262,27 +262,36 @@ public class ConfigurationClassPostProcessor implements BeanDefinitionRegistryPo
 	 */
 	public void processConfigBeanDefinitions(BeanDefinitionRegistry registry) {
 
-		// 用于存放 是配置类的BeanDefinition， key 为 beanName， value为BeanDefinition
+		// 用于存放是配置类的BeanDefinition， key 为 beanName， value为BeanDefinition
+		// 按名称解释表示存放用于被征用的配置类信息 如 APPConfig类
 		List<BeanDefinitionHolder> configCandidates = new ArrayList<>();
 
 		// 通过 BeanFactory 获取所有的 BeanDefinitionNames
 		String[] candidateNames = registry.getBeanDefinitionNames();
 
+		// 循环所有工厂中的BeanDefinition
 		for (String beanName : candidateNames) {
 
-			// 通过 BeanName 从 BeanFactory 工厂中获取 BeanDefinition
+			// 通过 BeanName 从 BeanFactory中的Map<String, BeanDefinition> beanDefinitionMap中获取 BeanDefinition
 			BeanDefinition beanDef = registry.getBeanDefinition(beanName);
 
-			// 主要判断当前的 BeanDefinition 是不是 加了@Configuration 的配置类
-			// 或者是加了 @import等的配置类
+			/**
+			 * 判断当前对象是否已经被当作配置类
+			 * （所谓的配置类就是加了 @Configuration注解的java类，在处理完会指定一个 Full状态， 表示完整的处理
+			 *   或者是java类中添加了 @Import @Component @ComponentScan @ImportResource）处理过了
+			 */
 			if (ConfigurationClassUtils.isFullConfigurationClass(beanDef) ||
 					ConfigurationClassUtils.isLiteConfigurationClass(beanDef)) {
 				if (logger.isDebugEnabled()) {
 					logger.debug("Bean definition has already been processed as a configuration class: " + beanDef);
 				}
 			}
-			// 对BeanDefinition 中的对象做检查，主要检查是不是配置类
+			// 方法主要查看 candidateNames 征用者中的配置类是否被征用， 如果没有被征用则需要为这些配置类设置两个属性
+			// 一个属性表示当前配置类是 full、lite
+			// 另一个属性是排序
+			// 并最终返回true， 如果不是配置类则返回false
 			else if (ConfigurationClassUtils.checkConfigurationClassCandidate(beanDef, this.metadataReaderFactory)) {
+				// 将配置类的描述Bean和名称存入configCandidates 中
 				configCandidates.add(new BeanDefinitionHolder(beanDef, beanName));
 			}
 		}
@@ -301,6 +310,8 @@ public class ConfigurationClassPostProcessor implements BeanDefinitionRegistryPo
 			return Integer.compare(i1, i2);
 		});
 
+		// 主要判断在当前的BeanFactory中是否包含一个org.springframework.context.annotation.internalConfigurationBeanNameGenerator单例Bean
+		// 如果包含则将这个Bean赋值给下面两个对象
 		// Detect any custom bean name generation strategy supplied through the enclosing application context
 		SingletonBeanRegistry sbr = null;
 		if (registry instanceof SingletonBeanRegistry) {
@@ -317,6 +328,7 @@ public class ConfigurationClassPostProcessor implements BeanDefinitionRegistryPo
 			}
 		}
 
+		// 判断是否设置环境变量
 		if (this.environment == null) {
 			this.environment = new StandardEnvironment();
 		}
@@ -327,12 +339,12 @@ public class ConfigurationClassPostProcessor implements BeanDefinitionRegistryPo
 				this.metadataReaderFactory, this.problemReporter, this.environment,
 				this.resourceLoader, this.componentScanBeanNameGenerator, registry);
 
-		// 将用于存放配置类的描述Bean 给candidates
+		// 将用于存放配置类的描述Bean存入candidates集合中，主要是为了去重
 		Set<BeanDefinitionHolder> candidates = new LinkedHashSet<>(configCandidates);
 		// 用于存放已经解析的配置类
 		Set<ConfigurationClass> alreadyParsed = new HashSet<>(configCandidates.size());
 		do {
-			// 解析
+			// 解析配置信息
 			parser.parse(candidates);
 			parser.validate();
 

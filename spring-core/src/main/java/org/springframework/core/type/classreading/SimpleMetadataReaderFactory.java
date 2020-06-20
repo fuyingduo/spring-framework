@@ -72,6 +72,12 @@ public class SimpleMetadataReaderFactory implements MetadataReaderFactory {
 	}
 
 
+	/**
+	 * 通过ASM类加载器加载本地.class文件，并返回接收的类
+	 * @param className the class name (to be resolved to a ".class" file)
+	 * @return
+	 * @throws IOException
+	 */
 	@Override
 	public MetadataReader getMetadataReader(String className) throws IOException {
 		try {

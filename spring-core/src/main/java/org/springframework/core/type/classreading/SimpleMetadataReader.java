@@ -40,15 +40,26 @@ import org.springframework.lang.Nullable;
  */
 final class SimpleMetadataReader implements MetadataReader {
 
+	// 指定的是本地.class文件资源
 	private final Resource resource;
 
+	// 类加载器加载完成的类
 	private final ClassMetadata classMetadata;
 
+	// 类加载器加载完成的类
 	private final AnnotationMetadata annotationMetadata;
 
 
+	/**
+	 * 用来读取编译好的.class文件
+	 * @param resource
+	 * @param classLoader
+	 * @throws IOException
+	 */
 	SimpleMetadataReader(Resource resource, @Nullable ClassLoader classLoader) throws IOException {
+		// 读取本地的.class文件
 		InputStream is = new BufferedInputStream(resource.getInputStream());
+		// 声明ASM类加载器
 		ClassReader classReader;
 		try {
 			classReader = new ClassReader(is);
@@ -60,7 +71,7 @@ final class SimpleMetadataReader implements MetadataReader {
 		finally {
 			is.close();
 		}
-
+		// 读取并通过 AnnotationMetadataReadingVisitor 接收加载完成的对象
 		AnnotationMetadataReadingVisitor visitor = new AnnotationMetadataReadingVisitor(classLoader);
 		classReader.accept(visitor, ClassReader.SKIP_DEBUG);
 

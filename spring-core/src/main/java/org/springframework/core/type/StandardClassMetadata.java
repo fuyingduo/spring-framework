@@ -32,6 +32,7 @@ import org.springframework.util.StringUtils;
  */
 public class StandardClassMetadata implements ClassMetadata {
 
+	// 代表的就是配置类对象
 	private final Class<?> introspectedClass;
 
 

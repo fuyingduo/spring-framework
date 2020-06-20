@@ -350,17 +350,25 @@ public abstract class AbstractBeanDefinition extends BeanMetadataAttributeAccess
 	}
 
 	/**
+	 * 为 BeanDefinition 设置初始化默认属性
 	 * Apply the provided default values to this bean.
 	 * @param defaults the default settings to apply
 	 * @since 2.5
 	 */
 	public void applyDefaults(BeanDefinitionDefaults defaults) {
+		// 懒加载
 		setLazyInit(defaults.isLazyInit());
+		// 自动注入
 		setAutowireMode(defaults.getAutowireMode());
+		// 依赖检查
 		setDependencyCheck(defaults.getDependencyCheck());
+		// 初始化方法名称
 		setInitMethodName(defaults.getInitMethodName());
+		// 强制初始化
 		setEnforceInitMethod(false);
+		// 销毁方法名称
 		setDestroyMethodName(defaults.getDestroyMethodName());
+		// 强制销毁
 		setEnforceDestroyMethod(false);
 	}
 

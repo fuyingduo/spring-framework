@@ -40,6 +40,7 @@ public class CachingMetadataReaderFactory extends SimpleMetadataReaderFactory {
 	/** Default maximum number of entries for a local MetadataReader cache: 256 */
 	public static final int DEFAULT_CACHE_LIMIT = 256;
 
+	// 用于存放元数据读取缓存的，可以理解为存放通过ClassLoad类加载器加载的.class文件的缓存
 	/** MetadataReader cache: either local or shared at the ResourceLoader level */
 	@Nullable
 	private Map<Resource, MetadataReader> metadataReaderCache;
@@ -114,13 +115,22 @@ public class CachingMetadataReaderFactory extends SimpleMetadataReaderFactory {
 	}
 
 
+	/**
+	 * 加载.class文件返回接收器
+	 * @param resource
+	 * @return
+	 * @throws IOException
+	 */
 	@Override
 	public MetadataReader getMetadataReader(Resource resource) throws IOException {
 		if (this.metadataReaderCache instanceof ConcurrentMap) {
 			// No synchronization necessary...
+			// 尝试从metadataReaderCache 中获取元数据如果没有则通过类加载
 			MetadataReader metadataReader = this.metadataReaderCache.get(resource);
 			if (metadataReader == null) {
+				// 使用ASM类加载器加载本地.class文件，并存入SimpleMetadataReader 对象中返回
 				metadataReader = super.getMetadataReader(resource);
+				// 存入加载完成的类缓存
 				this.metadataReaderCache.put(resource, metadataReader);
 			}
 			return metadataReader;

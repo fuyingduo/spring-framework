@@ -74,10 +74,17 @@ public class AnnotationScopeMetadataResolver implements ScopeMetadataResolver {
 	}
 
 
+	/**
+	 * 获取元数据的作用域 初始化过程中被扫描类中的作用域
+	 * @param definition the target bean definition
+	 * @return
+	 */
 	@Override
 	public ScopeMetadata resolveScopeMetadata(BeanDefinition definition) {
 		ScopeMetadata metadata = new ScopeMetadata();
+		// 判断当前的BeanDefinition 是否继承 AnnotatedBeanDefinition， 当前为ScannedGenericBeanDefinition 为AnnotatedBeanDefinition子类
 		if (definition instanceof AnnotatedBeanDefinition) {
+			// 获取作用域
 			AnnotatedBeanDefinition annDef = (AnnotatedBeanDefinition) definition;
 			AnnotationAttributes attributes = AnnotationConfigUtils.attributesFor(
 					annDef.getMetadata(), this.scopeAnnotationType);

@@ -72,6 +72,9 @@ abstract class ConfigurationClassUtils {
 
 
 	/**
+	 * 该方法主要判断当前传入的BeanDefinition 是否是 被@configuration、@component等注解修饰过的类
+	 * 如果是配置类则为该配置类添加属性 full、lite， 并设置一个排序的属性，如果不是配置类则不会做任何操作
+	 *
 	 * Check whether the given bean definition is a candidate for a configuration class
 	 * (or a nested component class declared within a configuration/component class,
 	 * to be auto-registered as well), and mark it accordingly.
@@ -81,23 +84,29 @@ abstract class ConfigurationClassUtils {
 	 */
 	public static boolean checkConfigurationClassCandidate(BeanDefinition beanDef, MetadataReaderFactory metadataReaderFactory) {
 
-		// 获取 BeanDefinition 锁描述对象的全线类名
+		// 获取 BeanDefinition 中描述对象的全限定名
 		String className = beanDef.getBeanClassName();
+
+		// 判断 BeanDefinition 的全限定名是否为空 或者工厂名称是否不为空， 在执行初始化过程中由于没有给factoryMethodName变量赋值，所以一定为空
 		if (className == null || beanDef.getFactoryMethodName() != null) {
 			return false;
 		}
 
 		AnnotationMetadata metadata;
-		// 判断当前的BeanDefinition 是不是注解BeanDefinition
+		// 判断当前的BeanDefinition 是不是继承了 AnnotatedBeanDefinition，用户自定义配置类需要进入处理APPConfig
 		if (beanDef instanceof AnnotatedBeanDefinition &&
 				className.equals(((AnnotatedBeanDefinition) beanDef).getMetadata().getClassName())) {
 			// Can reuse the pre-parsed metadata from the given BeanDefinition...
+			// 获取用户的元数据 --> 表示当前BeanDefinition 所描述的对象
 			metadata = ((AnnotatedBeanDefinition) beanDef).getMetadata();
 		}
+		// 判断当前的BeanDefinition 是不是继承了 AbstractBeanDefinition，
 		else if (beanDef instanceof AbstractBeanDefinition && ((AbstractBeanDefinition) beanDef).hasBeanClass()) {
 			// Check already loaded Class if present...
 			// since we possibly can't even load the class file for this Class.
+			// 获取当前描述Bean的Class对象
 			Class<?> beanClass = ((AbstractBeanDefinition) beanDef).getBeanClass();
+			// 将Class对象中的注解，是否是嵌套注解，和Class对象赋值给 StandardAnnotationMetadata
 			metadata = new StandardAnnotationMetadata(beanClass, true);
 		}
 		else {
@@ -113,11 +122,17 @@ abstract class ConfigurationClassUtils {
 			}
 		}
 
-		// 判断当前元数据是否有 @Configuration注解，如果存在则设置限定属性名， 如果包含设置属性表示当前对象为配置类
+		// 判断当前元数据是否有 @Configuration注解
+		// 这里主要判断当前类对象是不是配置类， 如果配置类中加入 @Configuration注解则为当前这个描述Bean设置一个属性
+		// 属性key 为 org.springframework.context.annotation.ConfigurationClassPostProcessor.configurationClass
+		// 属性value 为 full用来表示这个配置类已经陪完整处理
 		if (isFullConfigurationCandidate(metadata)) {
 			beanDef.setAttribute(CONFIGURATION_CLASS_ATTRIBUTE, CONFIGURATION_CLASS_FULL);
 		}
-		// 判断当前元数据是否包含 Component， ComponentScan， Import， ImportResource Bean 注解， 如果包含设置属性表示当前对象为配置类
+		// 判断当前元数据是否包含 Component， ComponentScan， Import， ImportResource Bean 注解
+		// 如果加入以上注解中一个，则为该配置类对象描述Bean（BeanDefinition）配置属性
+		// 属性key 为 org.springframework.context.annotation.ConfigurationClassPostProcessor.configurationClass
+		// 属性value 为 lite 表示这个配置类已经被处理但是不是完整的
 		else if (isLiteConfigurationCandidate(metadata)) {
 			beanDef.setAttribute(CONFIGURATION_CLASS_ATTRIBUTE, CONFIGURATION_CLASS_LITE);
 		}
@@ -125,7 +140,7 @@ abstract class ConfigurationClassUtils {
 			return false;
 		}
 
-		// 获取当前元数据的排序， 并设置order值
+		// 获取当前元数据的排序， 并设置后置后置处理器顺序
 		// It's a full or lite configuration candidate... Let's determine the order value, if any.
 		Integer order = getOrder(metadata);
 		if (order != null) {

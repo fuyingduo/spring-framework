@@ -93,8 +93,10 @@ public class ClassPathScanningCandidateComponentProvider implements EnvironmentC
 
 	private String resourcePattern = DEFAULT_RESOURCE_PATTERN;
 
+	// 类扫描@ComponentScan中定义的需要包含扫描的过滤器
 	private final List<TypeFilter> includeFilters = new LinkedList<>();
 
+	// 类扫描@ComponentScan中定义的需要排除扫描的过滤器
 	private final List<TypeFilter> excludeFilters = new LinkedList<>();
 
 	@Nullable
@@ -313,6 +315,7 @@ public class ClassPathScanningCandidateComponentProvider implements EnvironmentC
 			return addCandidateComponentsFromIndex(this.componentsIndex, basePackage);
 		}
 		else {
+			// 如果没有添加spring-context-index则走默认扫描
 			return scanCandidateComponents(basePackage);
 		}
 	}
@@ -414,10 +417,11 @@ public class ClassPathScanningCandidateComponentProvider implements EnvironmentC
 	}
 
 	private Set<BeanDefinition> scanCandidateComponents(String basePackage) {
+		// 用于存放被扫描的对象描述Bean
 		Set<BeanDefinition> candidates = new LinkedHashSet<>();
 		try {
 
-			// 通过basePackage 字符串拼接获取被扫描的类路径
+			// 将basePackage路径拼接生成完整的扫描路径
 			String packageSearchPath = ResourcePatternResolver.CLASSPATH_ALL_URL_PREFIX +
 					resolveBasePackage(basePackage) + '/' + this.resourcePattern;
 
@@ -429,10 +433,15 @@ public class ClassPathScanningCandidateComponentProvider implements EnvironmentC
 				if (traceEnabled) {
 					logger.trace("Scanning " + resource);
 				}
+				// 判断资源文件是否可读， 默认方法返回true，写死的
 				if (resource.isReadable()) {
 					try {
+						// 加载本地的.class文件并返回MetadataReader
 						MetadataReader metadataReader = getMetadataReaderFactory().getMetadataReader(resource);
+
+						// 判断是否是需要被扫描的Bean，其实就是判断是不是@service @Component这种Bean
 						if (isCandidateComponent(metadataReader)) {
+							// 将扫描完成的类存入ScannedGenericBeanDefinition 中， ScannedGenericBeanDefinition 是 BeanDefinition子类，通过名称可以看出是一个基础的描述Bean
 							ScannedGenericBeanDefinition sbd = new ScannedGenericBeanDefinition(metadataReader);
 							sbd.setSource(resource);
 							if (isCandidateComponent(sbd)) {
@@ -491,11 +500,13 @@ public class ClassPathScanningCandidateComponentProvider implements EnvironmentC
 	 * @return whether the class qualifies as a candidate component
 	 */
 	protected boolean isCandidateComponent(MetadataReader metadataReader) throws IOException {
+		// 是否是在排除范围
 		for (TypeFilter tf : this.excludeFilters) {
 			if (tf.match(metadataReader, getMetadataReaderFactory())) {
 				return false;
 			}
 		}
+		// 是否包含
 		for (TypeFilter tf : this.includeFilters) {
 			if (tf.match(metadataReader, getMetadataReaderFactory())) {
 				return isConditionMatch(metadataReader);
